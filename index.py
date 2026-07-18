@@ -1,11 +1,15 @@
+import os
 import base64
 import requests
 from dotenv import load_dotenv
-import os
+from datetime import datetime
 
-load_dotenv('.env')
-CLIENT_ID = os.getenv('CLIENT_ID')
-CLIENT_SECRET = os.getenv('CLIENT_SECRET')
+# Load environment variables
+load_dotenv()
+
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+
 
 # Generate Spotify Access Token
 def access_token():
@@ -24,48 +28,81 @@ def access_token():
         )
 
         response.raise_for_status()
+        print("✅ Token Generated Successfully...\n")
 
-        print("Token Generated Successfully...")
         return response.json()["access_token"]
 
-    except Exception as e:
-        print("Error:", e)
+    except requests.exceptions.RequestException as e:
+        print("Error generating token:", e)
+        return None
 
 
-# Search albums (replacement for new releases)
+# Fetch 50 albums
+def get_albums():
 
-def get_new_release():
-    try:
-        token = access_token()
+    token = access_token()
 
-        headers = {
-            "Authorization": f"Bearer {token}"
-        }
+    if not token:
+        return
 
-        param = {
+    headers = {
+        "Authorization": f"Bearer {token}"
+    }
 
-            "limit": 50
-        }
+    current_year = datetime.now().year
+
+    albums = []
+
+    # Spotify now allows a maximum limit of 10
+    for offset in range(0, 50, 10):
 
         response = requests.get(
             "https://api.spotify.com/v1/search",
             headers=headers,
-            params=param
+            params={
+                "q": f"year:{current_year}",
+                "type": "album",
+                "limit": 10,
+                "offset": offset
+            }
         )
 
-        if response.status_code == 200:
-            # print(response.json())
-            data = response.json()
-            albums = data['albums']['items']
-            for i in albums:
-                    a = {
-                        "album_name": i["name"],
-                        "release_date": i["release_date"]
-                }
-        print(a)
-    except Exception as e:
-        print ("Error in latest release data fetching..",e)
+        print("Request URL:", response.request.url)
+        print("Status Code:", response.status_code)
 
-get_new_release()
+        if response.status_code != 200:
+            print(response.text)
+            return
 
-# get_albums()
+        data = response.json()
+
+        albums.extend(data["albums"]["items"])
+
+    print("\n" + "=" * 80)
+    print(f"Latest Albums Released in {current_year}")
+    print("=" * 80)
+
+    if not albums:
+        print("No albums found.")
+        return
+
+    for i, album in enumerate(albums, start=1):
+
+        artists = ", ".join(
+            artist["name"] for artist in album["artists"]
+        )
+
+        print(f"\nAlbum {i}")
+        print(f"Album Name   : {album['name']}")
+        print(f"Artist       : {artists}")
+        print(f"Release Date : {album['release_date']}")
+        print(f"Total Tracks : {album['total_tracks']}")
+        print(f"Spotify URL  : {album['external_urls']['spotify']}")
+        print("-" * 80)
+
+
+# Run
+if __name__ == "__main__":
+    get_albums()
+
+  
