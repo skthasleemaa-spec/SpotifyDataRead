@@ -1,2 +1,4 @@
 .venv
 .env
+.vscode 
+#these files not included in github

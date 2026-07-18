@@ -33,9 +33,8 @@ def access_token():
 
 
 # Search albums (replacement for new releases)
-import requests
 
-def get_albums():
+def get_new_release():
     try:
         token = access_token()
 
@@ -43,34 +42,30 @@ def get_albums():
             "Authorization": f"Bearer {token}"
         }
 
-        params = {
-            "q": "year:2026",
-            "type": "album",
-            "limit": 10
+        param = {
+
+            "limit": 50
         }
 
         response = requests.get(
             "https://api.spotify.com/v1/search",
             headers=headers,
-            params=params
+            params=param
         )
 
-        print(response.status_code)
-
         if response.status_code == 200:
-            print(response.json())
+            # print(response.json())
             data = response.json()
             albums = data['albums']['items']
             for i in albums:
-                a = {
-                    'album_names':i ['name'],
-                    'Release _date' : i['release_date']
-
+                    a = {
+                        "album_name": i["name"],
+                        "release_date": i["release_date"]
                 }
-                print(a)
+        print(a)
     except Exception as e:
         print ("Error in latest release data fetching..",e)
-        # else:
-        #     print(response.json())
 
-get_albums()
+get_new_release()
+
+# get_albums()
